@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  /* 1. CONFIGURACIÓN BASE (Color de fondo de Adrián) */
+  body { 
+    margin: 0; 
+    transition: background-color 0.8s; 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #222; /* Color por defecto oscuro */
+    overflow: hidden; /* Evita scrolls raros */
+  }
+
+  /* Colores de alto contraste por imagen */
+  body:has(#r1:checked) { background-color: #DC143C; } 
+  body:has(#r2:checked) { background-color: #00FF00; } 
+  body:has(#r3:checked) { background-color: #0000FF; } 
+  body:has(#r4:checked) { background-color: #FFFF00; } 
+  body:has(#r5:checked) { background-color: #FF00FF; } 
+  body:has(#r6:checked) { background-color: #00FFFF; } 
+  body:has(#r7:checked) { background-color: #FF8C00; } 
+  body:has(#r8:checked) { background-color: #8A2BE2; } 
+  body:has(#r9:checked) { background-color: #FFD700; } 
+  body:has(#r10:checked) { background-color: #2E8B57; } 
+
+  /* 2. CONTROLES (Siempre visibles) */
+  .nav { 
+    position: absolute;
+    top: 40px;
+    display: flex; 
+    gap: 15px; 
+    z-index: 100;
+  }
+  
+  .btn { 
+    padding: 10px 20px; 
+    background: #fff; 
+    color: #000; 
+    cursor: pointer; 
+    font-family: monospace; 
+    font-weight: bold; 
+    font-size: 16px;
+    border: none;
+  }
+
+  /* Las flechas siempre están ahí. Mostramos la que toca para avanzar/retroceder */
+  .arrow { display: none; }
+  
+  /* Flecha Derecha (Siempre visible, apunta al siguiente. Si es 10, no hace nada o vuelve al 1 si quieres, aquí la dejamos apuntando al 10) */
+  #r1:checked ~ .nav .r2, #r2:checked ~ .nav .r3, #r3:checked ~ .nav .r4, #r4:checked ~ .nav .r5,
+  #r5:checked ~ .nav .r6, #r6:checked ~ .nav .r7, #r7:checked ~ .nav .r8, #r8:checked ~ .nav .r9,
+  #r10:checked ~ .nav .r10, #r9:checked ~ .nav .r10 { display: block; } /* En el 10, la flecha der apunta al 10 (se queda quieto) */
+
+  /* Flecha Izquierda (Siempre visible) */
+  #r1:checked ~ .nav .l1, #r2:checked ~ .nav .l1, #r3:checked ~ .nav .l2, #r4:checked ~ .nav .l3,
+  #r5:checked ~ .nav .l4, #r6:checked ~ .nav .l5, #r7:checked ~ .nav .l6, #r8:checked ~ .nav .l7,
+  #r9:checked ~ .nav .l8, #r10:checked ~ .nav .l9 { display: block; } /* En el 1, la izq apunta al 1 */
+
+  /* 3. CARRUSEL (Centrado, deja ver adyacentes) */
+  /* La ventana es más grande (1000px) pero la imagen centrada mide 600px */
+  .window { 
+    width: 100%; 
+    max-width: 1200px; /* Ancho para ver la img central y trozos de las de los lados */
+    height: 400px;
+    overflow: hidden; 
+    display: flex;
+    justify-content: center;
+  }
+  
+  .track { 
+    display: flex; 
+    align-items: center;
+    gap: 40px; /* Espacio entre imágenes */
+    /* El truco: Movemos la pista basándonos en el ancho de la imagen (600) + gap (40) = 640px por salto */
+    transition: transform 0.6s ease; 
+  }
+  
+  .slide { 
+    width: 600px; 
+    height: 350px; 
+    flex-shrink: 0; /* Para que no se aplasten */
+    opacity: 0.5; /* Las de los lados se ven apagadas */
+    transform: scale(0.9); /* Las de los lados son más pequeñas */
+    transition: all 0.6s ease;
+  }
+  
+  img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    display: block; 
+  }
+
+  /* 4. LÓGICA DE MOVIMIENTO Y FOCO */
+  /* Estado inactivo general */
+  .state { display: none; }
+
+  /* Matemáticas del transform: 
+    Como estamos en un track centrado por defecto, la imagen 1 está en el centro (si no movemos nada).
+    Para centrar la 1, movemos 0.
+    Para centrar la 2, movemos -(ancho + gap) = -640px.
+  */
+  #r1:checked ~ .window .track { transform: translateX(0); }
+  #r2:checked ~ .window .track { transform: translateX(-640px); }
+  #r3:checked ~ .window .track { transform: translateX(-1280px); }
+  #r4:checked ~ .window .track { transform: translateX(-1920px); }
+  #r5:checked ~ .window .track { transform: translateX(-2560px); }
+  #r6:checked ~ .window .track { transform: translateX(-3200px); }
+  #r7:checked ~ .window .track { transform: translateX(-3840px); }
+  #r8:checked ~ .window .track { transform: translateX(-4480px); }
+  #r9:checked ~ .window .track { transform: translateX(-5120px); }
+  #r10:checked ~ .window .track { transform: translateX(-5760px); }
+
+  /* Iluminar y agrandar solo la imagen activa */
+  #r1:checked ~ .window .track .slide:nth-child(1),
+  #r2:checked ~ .window .track .slide:nth-child(2),
+  #r3:checked ~ .window .track .slide:nth-child(3),
+  #r4:checked ~ .window .track .slide:nth-child(4),
+  #r5:checked ~ .window .track .slide:nth-child(5),
+  #r6:checked ~ .window .track .slide:nth-child(6),
+  #r7:checked ~ .window .track .slide:nth-child(7),
+  #r8:checked ~ .window .track .slide:nth-child(8),
+  #r9:checked ~ .window .track .slide:nth-child(9),
+  #r10:checked ~ .window .track .slide:nth-child(10) {
+    opacity: 1;
+    transform: scale(1.1); /* La activa es más grande */
+  }
+
+</style>
+</head>
+<body>
+
+  <input type="radio" name="c" id="r1" class="state" checked>
+  <input type="radio" name="c" id="r2" class="state">
+  <input type="radio" name="c" id="r3" class="state">
+  <input type="radio" name="c" id="r4" class="state">
+  <input type="radio" name="c" id="r5" class="state">
+  <input type="radio" name="c" id="r6" class="state">
+  <input type="radio" name="c" id="r7" class="state">
+  <input type="radio" name="c" id="r8" class="state">
+  <input type="radio" name="c" id="r9" class="state">
+  <input type="radio" name="c" id="r10" class="state">
+
+  <div class="nav">
+    <label for="r1" class="btn">INICIO</label>
+    
+    <label for="r1" class="btn arrow l1">←</label>
+    <label for="r1" class="btn arrow l2">←</label>
+    <label for="r2" class="btn arrow l3">←</label>
+    <label for="r3" class="btn arrow l4">←</label>
+    <label for="r4" class="btn arrow l5">←</label>
+    <label for="r5" class="btn arrow l6">←</label>
+    <label for="r6" class="btn arrow l7">←</label>
+    <label for="r7" class="btn arrow l8">←</label>
+    <label for="r8" class="btn arrow l9">←</label>
+
+    <label for="r2" class="btn arrow r2">→</label>
+    <label for="r3" class="btn arrow r3">→</label>
+    <label for="r4" class="btn arrow r4">→</label>
+    <label for="r5" class="btn arrow r5">→</label>
+    <label for="r6" class="btn arrow r6">→</label>
+    <label for="r7" class="btn arrow r7">→</label>
+    <label for="r8" class="btn arrow r8">→</label>
+    <label for="r9" class="btn arrow r9">→</label>
+    <label for="r10" class="btn arrow r10">→</label>
+
+    <label for="r10" class="btn">FINAL</label>
+  </div>
+
+  <div class="window">
+    <div class="track">
+      <div class="slide"><img src="https://plus.unsplash.com/premium_photo-1772565797349-b7565b18ce66?w=600"></div>
+      <div class="slide"><img src="https://images.unsplash.com/photo-1772516912383-2d8d51fc53f1?w=600"></div>
+      <div class="slide"><img src="https://images.unsplash.com/photo-1772424131868-6b9f154b59ce?w=600"></div>
+      <div class="slide"><img src="https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600"></div>
+      <div class="slide"><img src="https://plus.unsplash.com/premium_photo-1770738995215-a8582e5b1d97?w=600"></div>
+      <div class="slide"><img src="https://plus.unsplash.com/premium_photo-1674489157120-9c386f7173d9?w=600"></div>
+      <div class="slide"><img src="https://images.unsplash.com/photo-1772616983875-03ca7293c933?w=600"></div>
+      <div class="slide"><img src="https://plus.unsplash.com/premium_photo-1772376852781-e83b9f45ab94?w=600"></div>
+      <div class="slide"><img src="https://images.unsplash.com/photo-1772475385327-ae6212f900aa?w=600"></div>
+      <div class="slide"><img src="https://plus.unsplash.com/premium_photo-1772065873757-61d8075620b8?w=600"></div>
+    </div>
+  </div>
+
+</body>
+</html>
